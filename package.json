@@ -1,6 +1,6 @@
 {
 	"name": "base-bot",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Simple Base Bot Baileys",
 	"main": "main.js",
 	"scripts": {
@@ -23,6 +23,7 @@
 	"imports": {
 		"#config": "./config.js",
 		"#lib": "./src/Lib/index.js",
-		"#core": "./src/Core/index.js"
+		"#core": "./src/Core/index.js",
+		"#utils": "./src/Utils/index.js"
 	}
 }

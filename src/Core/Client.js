@@ -10,6 +10,7 @@ import MAIN_LOGGER from 'pino'
 import NodeCache from '@cacheable/node-cache'
 import { config } from '#config'
 import { Serialize, cachedGroupMetadata, MetadataCache } from '#lib'
+import { log } from '#utils'
 
 const logger = MAIN_LOGGER({ level: 'silent' })
 const msgRetryCounterCache = new NodeCache()
@@ -44,8 +45,8 @@ export const start = async () => {
 		 * const code = await sock.requestPairingCode(phone, customPairingCode)
 		 */
 		const code = await sock.requestPairingCode(phone)
-		console.log(`PhoneNumber: ${phone}`)
-		console.log(`Pairing Code: ${code.slice(0, 4)}-${code.slice(4)}`)
+		log.info(`PhoneNumber: ${phone}`)
+		log.info(`Pairing Code: ${code.slice(0, 4)}-${code.slice(4)}`)
 	}
 
 	sock.ev.on('connection.update', update => {
@@ -55,12 +56,12 @@ export const start = async () => {
 			if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
 				start()
 			} else {
-				console.error('Connection closed. You are logged out.')
+				log.error('Connection closed. You are logged out.')
 			}
 		}
 
 		if (connection === 'open') {
-			console.log('Connected to WhatsApp')
+			log.info('Connected to WhatsApp')
 		}
 	})
 
@@ -82,7 +83,7 @@ export const start = async () => {
 			const m = new MetadataCache(sock)
 			await m.updateGroup(updates)
 		} catch (error) {
-			console.warn(`[ERROR] Failed to update groups: ${error.message}`)
+			log.warn(`[ERROR] Failed to update groups: ${error.message}`)
 		}
 	})
 
@@ -103,7 +104,7 @@ export const start = async () => {
 			const m = new MetadataCache(sock)
 			await m.updateParticipant(id, participants, action)
 		} catch (error) {
-			console.warn(`[ERROR] Failed to update participants: ${error.message}`)
+			log.warn(`[ERROR] Failed to update participants: ${error.message}`)
 		}
 	})
 }

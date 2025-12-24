@@ -7,6 +7,7 @@
 */
 
 import { groupCache } from '#core'
+import { log } from '#utils'
 import { isJidBroadcast, isJidStatusBroadcast, jidNormalizedUser } from 'baileys'
 
 /**
@@ -184,7 +185,7 @@ export class MetadataCache {
 				const metadata = await this.sock.groupMetadata(chat)
 				groupCache.set(chat, metadata)
 			} catch (err) {
-				console.log(`Gagal mengambil metadata grup ${chat}:`, err.message)
+				log.warn(`Gagal mengambil metadata grup ${chat}:`, err.message)
 				return
 			}
 		}
@@ -270,7 +271,6 @@ export class MetadataCache {
 			if (!group.id) return
 
 			if (isJidBroadcast(group.id) || isJidStatusBroadcast(group.id)) {
-				console.warn(`Lewati upsert untuk broadcast: ${group.id}`)
 				return
 			}
 
@@ -290,7 +290,6 @@ export class MetadataCache {
 			if (!update.id) continue
 
 			if (isJidBroadcast(update.id) || isJidStatusBroadcast(update.id)) {
-				console.warn(`Lewati update untuk broadcast: ${update.id}`)
 				continue
 			}
 
@@ -299,7 +298,7 @@ export class MetadataCache {
 					const metadata = await this.sock.groupMetadata(update.id)
 					groupCache.set(update.id, metadata)
 				} catch (err) {
-					console.log(`Gagal mengambil metadata grup ${update.id}:`, err.message)
+					log.warn(`Gagal mengambil metadata grup ${update.id}:`, err.message)
 					continue
 				}
 			}
