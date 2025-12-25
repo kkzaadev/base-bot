@@ -11,7 +11,7 @@ import NodeCache from '@cacheable/node-cache'
 import { processCommand } from './BaseBot.js'
 import { config } from '#config'
 import { Serialize, cachedGroupMetadata, MetadataCache } from '#lib'
-import { log } from '#utils'
+import { log, showAllCache, showGroupCache } from '#utils'
 
 const logger = MAIN_LOGGER({ level: 'silent' })
 const msgRetryCounterCache = new NodeCache()
@@ -90,6 +90,10 @@ export const start = async () => {
 			const m = new MetadataCache(sock)
 			await m.updateGroup(updates)
 			// log.debug('Groups updated successfully')
+			// showAllCache()
+			// for (const update of updates) {
+			// 	if (update.id) showGroupCache(update.id)
+			// }
 		} catch (error) {
 			log.warn(`[ERROR] Failed to update groups: ${error.message}`)
 		}
@@ -113,6 +117,8 @@ export const start = async () => {
 			const m = new MetadataCache(sock)
 			await m.updateParticipant(id, participants, action)
 			// log.debug('Participants updated successfully')
+			// showAllCache()
+			//showGroupCache(id)
 		} catch (error) {
 			log.warn(`[ERROR] Failed to update participants: ${error.message}`)
 		}

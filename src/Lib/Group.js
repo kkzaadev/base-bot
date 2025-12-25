@@ -179,8 +179,11 @@ export class MetadataCache {
 	/** Gets group metadata from cache or fetches from server */
 	async getGroupMetadata(chat) {
 		if (!groupCache.has(chat)) {
+			// log.debug(`[CACHE MISS] Fetching metadata from API: ${chat}`)
 			const metadata = await this.sock.groupMetadata(chat)
 			groupCache.set(chat, metadata)
+		} else {
+			// log.debug(`[CACHE HIT] Using cached metadata: ${chat}`)
 		}
 		return groupCache.get(chat)
 	}
@@ -201,12 +204,15 @@ export class MetadataCache {
 	async updateParticipant(chat, participants, action = 'add') {
 		if (!groupCache.has(chat)) {
 			try {
+				// log.debug(`[CACHE MISS] Fetching metadata for participant update: ${chat}`)
 				const metadata = await this.sock.groupMetadata(chat)
 				groupCache.set(chat, metadata)
 			} catch (err) {
 				log.warn(`Failed to get group metadata ${chat}:`, err.message)
 				return
 			}
+		} else {
+			// log.debug(`[CACHE HIT] Updating participant in cache: ${chat}`)
 		}
 
 		const group = groupCache.get(chat)
@@ -317,12 +323,15 @@ export class MetadataCache {
 
 			if (!groupCache.has(update.id)) {
 				try {
+					// log.debug(`[CACHE MISS] Fetching metadata for group update: ${update.id}`)
 					const metadata = await this.sock.groupMetadata(update.id)
 					groupCache.set(update.id, metadata)
 				} catch (err) {
 					log.warn(`Failed to get group metadata ${update.id}:`, err.message)
 					continue
 				}
+			} else {
+				// log.debug(`[CACHE HIT] Updating group in cache: ${update.id}`)
 			}
 
 			const group = groupCache.get(update.id)
