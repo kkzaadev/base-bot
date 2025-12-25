@@ -11,18 +11,10 @@ import path from 'path'
 import { pathToFileURL } from 'url'
 import { log } from '#utils'
 
-/**
- * Array containing all loaded handlers sorted by priority
- * @type {Array<Object>}
- */
+/** Array containing all loaded handlers sorted by priority */
 export const handlers = []
 
-/**
- * Recursively loads all handler files from a directory and its subdirectories
- * Each handler must export an object with a `process` function
- * @param {string} dir - The directory path to scan for handlers
- * @returns {Promise<void>}
- */
+/** Recursively loads all handler files from a directory and its subdirectories */
 async function loadHandlers(dir) {
 	const files = await fs.promises.readdir(dir)
 
@@ -50,11 +42,7 @@ async function loadHandlers(dir) {
 	}
 }
 
-/**
- * Initializes all handlers from the Handlers directory
- * Loads all handlers and sorts them by priority (lower priority runs first)
- * @returns {Promise<void>}
- */
+/** Initializes all handlers from the Handlers directory */
 export async function initHandlers() {
 	const handlersDir = path.join(process.cwd(), 'src', 'Handlers')
 	await loadHandlers(handlersDir)
@@ -62,13 +50,7 @@ export async function initHandlers() {
 	log.info('Load All Handler done...')
 }
 
-/**
- * Pre-processes a message through all registered handlers
- * Handlers are executed in order of priority until one returns false
- * @param {Object} sock - The WhatsApp socket instance
- * @param {Object} messageInfo - The serialized message object
- * @returns {Promise<boolean>} Returns false if processing should stop, true otherwise
- */
+/** Pre-processes a message through all registered handlers */
 export async function preProcess(sock, messageInfo) {
 	let stopProcessing = false
 

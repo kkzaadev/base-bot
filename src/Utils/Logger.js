@@ -29,12 +29,12 @@ const COLORS = {
 /**
  * User type color mapping
  */
-const USER_TYPE_COLORS = {
-	owner: COLORS.error,
-	pro: COLORS.brightCyan,
-	basic: COLORS.info,
-	free: COLORS.dim
-}
+// const USER_TYPE_COLORS = {
+// 	owner: COLORS.error,
+// 	pro: COLORS.brightCyan,
+// 	basic: COLORS.info,
+// 	free: COLORS.dim
+// }
 
 /**
  * Returns current date/time components
@@ -99,16 +99,16 @@ export const log = {
 /**
  * Logs a formatted message with user information
  */
-export function logMessage(pushname, content, senderAlt, userType) {
+export function logMessage(pushname, content, senderAlt /*, userType */) {
 	const { hours, minutes, seconds, date, month, year } = getTimeComponents()
 
 	const dateStr = `${COLORS.dim}${COLORS.cyan}${month}/${date}/${year}${COLORS.reset}`
 	const time = `${COLORS.cyan}[ ${hours}:${minutes}:${seconds} ]${COLORS.reset}`
 	const user = `${COLORS.italic}${COLORS.magenta}[ ${senderAlt} ]${COLORS.reset}`
-	const type = `${COLORS.italic}${USER_TYPE_COLORS[userType] || COLORS.dim}[ ${userType.toUpperCase()} ]${COLORS.reset}`
+	// const type = `${COLORS.italic}${USER_TYPE_COLORS[userType] || COLORS.dim}[ ${userType.toUpperCase()} ]${COLORS.reset}`
 	const name = `${COLORS.italic}${COLORS.warn}[ ${pushname} ]${COLORS.reset}`
 	const message = `${COLORS.white}${content}${COLORS.reset}`
 
-	console.log(`${dateStr} ${time} ${user} ${type} ${name}`)
+	console.log(`${dateStr} ${time} ${user} ${name}`)
 	console.log(message)
 }

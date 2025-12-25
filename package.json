@@ -1,6 +1,6 @@
 {
 	"name": "base-bot",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Simple Base Bot Baileys",
 	"main": "main.js",
 	"scripts": {

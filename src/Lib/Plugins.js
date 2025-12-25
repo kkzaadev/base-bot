@@ -11,23 +11,13 @@ import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { log } from '#utils'
 
-/**
- * Path to the plugins directory
- * @type {string}
- */
+/** Path to the plugins directory */
 const pluginsPath = join(process.cwd(), 'src', 'Plugins')
 
-/**
- * Array containing all loaded plugins
- * @type {Array<Object>}
- */
+/** Array containing all loaded plugins */
 export let plugins = []
 
-/**
- * Recursively loads all plugins from a directory and its subdirectories
- * @param {string} directory - The directory path to scan for plugins
- * @returns {Promise<Array<Object>>} Array of loaded plugin objects
- */
+/** Recursively loads all plugins from a directory and its subdirectories */
 export async function loadPlugins(directory) {
 	const loadedPlugins = []
 
@@ -64,15 +54,14 @@ export async function loadPlugins(directory) {
 	return loadedPlugins
 }
 
-/**
- * Reloads all plugins from the plugins directory
- * Clears the existing plugins array and loads fresh copies
- * @returns {Promise<Array<Object>>} Array of reloaded plugin objects
- */
+/** Reloads all plugins from the plugins directory */
 export async function reloadPlugins() {
 	plugins = await loadPlugins(pluginsPath)
 	if (plugins.length === 0) {
 		log.warn('No plugins loaded.')
+	} else {
+		const totalCommands = plugins.reduce((sum, p) => sum + p.Commands.length, 0)
+		log.info(`Loaded ${plugins.length} plugins with ${totalCommands} commands`)
 	}
 	return plugins
 }

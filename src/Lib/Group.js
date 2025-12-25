@@ -10,10 +10,8 @@ import { groupCache } from '#core'
 import { log } from '#utils'
 import { isJidBroadcast, isJidStatusBroadcast, jidNormalizedUser } from 'baileys'
 
-/**
- * Helper functions for checking participant status
- */
-function isParticipant(metadata, jid) {
+/** Checks if a JID is a participant in the group */
+export function isParticipant(metadata, jid) {
 	if (!metadata?.participants) return false
 	const targetNumber = jid?.match(/^\d+/)?.[0]
 	return metadata.participants.some(p => {
@@ -23,7 +21,8 @@ function isParticipant(metadata, jid) {
 	})
 }
 
-function isAdmin(metadata, jid) {
+/** Checks if a JID is admin in a group */
+export function isAdmin(metadata, jid) {
 	if (!metadata?.participants) return false
 	const targetNumber = jid?.match(/^\d+/)?.[0]
 	const participant = metadata.participants.find(p => {
@@ -34,16 +33,16 @@ function isAdmin(metadata, jid) {
 	return participant?.admin === 'admin' || participant?.admin === 'superadmin'
 }
 
-/**
- * Group class for managing group operations
- */
+/** Group class for managing group operations */
 export class Group {
+	/** Creates a new Group instance for managing group operations */
 	constructor(id, sock) {
 		this.id = id
 		this.sock = sock
 		this.metadata = groupCache.get(id) || null
 	}
 
+	/** Fetches and caches group metadata if not already cached */
 	async ensureMetadata() {
 		if (!this.metadata) {
 			this.metadata = await this.sock.groupMetadata(this.id)
@@ -52,6 +51,7 @@ export class Group {
 		return this.metadata
 	}
 
+	/** Promotes a participant to admin in the group */
 	async promote(participant) {
 		await this.ensureMetadata()
 		if (!isParticipant(this.metadata, participant)) return null
@@ -60,6 +60,7 @@ export class Group {
 		return true
 	}
 
+	/** Demotes an admin to regular participant in the group */
 	async demote(participant) {
 		await this.ensureMetadata()
 		if (!isParticipant(this.metadata, participant)) return null
@@ -68,6 +69,7 @@ export class Group {
 		return true
 	}
 
+	/** Removes a participant from the group */
 	async remove(participant) {
 		await this.ensureMetadata()
 		if (!isParticipant(this.metadata, participant)) return null
@@ -75,22 +77,27 @@ export class Group {
 		return true
 	}
 
+	/** Adds a new participant to the group */
 	async add(participant) {
 		return await this.sock.groupParticipantsUpdate(this.id, [participant], 'add')
 	}
 
+	/** Bot leaves the group */
 	async leave() {
 		return await this.sock.groupLeave(this.id)
 	}
 
+	/** Updates the group name/subject */
 	async setName(name) {
 		return await this.sock.groupUpdateSubject(this.id, name)
 	}
 
+	/** Updates the group description */
 	async setDescription(description) {
 		return await this.sock.groupUpdateDescription(this.id, description)
 	}
 
+	/** Sets who can add members to the group (admin_add or all_member_add) */
 	async setMemberAddMode(mode) {
 		await this.ensureMetadata()
 		if (mode === 'admin_add' && !this.metadata.memberAddMode) return null
@@ -99,6 +106,7 @@ export class Group {
 		return true
 	}
 
+	/** Sets the ephemeral message duration for the group */
 	async setEphemeral(duration) {
 		await this.ensureMetadata()
 		if (this.metadata.ephemeralDuration === duration) return null
@@ -106,6 +114,7 @@ export class Group {
 		return true
 	}
 
+	/** Kicks all non-admin participants from the group */
 	async kickAll() {
 		await this.ensureMetadata()
 		const botId = jidNormalizedUser(this.sock.user?.id)
@@ -117,16 +126,19 @@ export class Group {
 		return await this.sock.groupParticipantsUpdate(this.id, participants, 'remove')
 	}
 
+	/** Gets the group invite link */
 	async getInviteCode() {
 		const invite = await this.sock.groupInviteCode(this.id)
 		return `https://chat.whatsapp.com/${invite}`
 	}
 
+	/** Revokes the group invite link and generates a new one */
 	async revokeInvite() {
 		const invite = await this.sock.groupRevokeInvite(this.id)
 		return `https://chat.whatsapp.com/${invite}`
 	}
 
+	/** Enables or disables join approval for the group */
 	async setJoinApproval(mode) {
 		await this.ensureMetadata()
 		if (mode === 'on' && this.metadata.joinApprovalMode) return null
@@ -135,6 +147,7 @@ export class Group {
 		return true
 	}
 
+	/** Sets announcement mode (only admins can send messages) */
 	async setAnnouncement(mode) {
 		await this.ensureMetadata()
 		if (mode === 'announcement' && this.metadata.announce) return null
@@ -143,6 +156,7 @@ export class Group {
 		return true
 	}
 
+	/** Sets restricted mode (only admins can edit group info) */
 	async setRestricted(mode) {
 		await this.ensureMetadata()
 		if (mode === 'locked' && this.metadata.restrict) return null
@@ -157,10 +171,12 @@ export class Group {
  */
 
 export class MetadataCache {
+	/** Creates a new MetadataCache instance for managing group metadata */
 	constructor(sock) {
 		this.sock = sock
 	}
 
+	/** Gets group metadata from cache or fetches from server */
 	async getGroupMetadata(chat) {
 		if (!groupCache.has(chat)) {
 			const metadata = await this.sock.groupMetadata(chat)
@@ -169,23 +185,26 @@ export class MetadataCache {
 		return groupCache.get(chat)
 	}
 
+	/** Clears cached metadata for a specific group */
 	clearGroupCache(chat) {
 		if (groupCache.has(chat)) {
 			groupCache.del(chat)
 		}
 	}
 
+	/** Clears all cached group metadata */
 	clearAllCache() {
 		groupCache.flushAll()
 	}
 
+	/** Updates participant list in cache when members join/leave/promote/demote */
 	async updateParticipant(chat, participants, action = 'add') {
 		if (!groupCache.has(chat)) {
 			try {
 				const metadata = await this.sock.groupMetadata(chat)
 				groupCache.set(chat, metadata)
 			} catch (err) {
-				log.warn(`Gagal mengambil metadata grup ${chat}:`, err.message)
+				log.warn(`Failed to get group metadata ${chat}:`, err.message)
 				return
 			}
 		}
@@ -235,6 +254,7 @@ export class MetadataCache {
 		group.size = group.participants.length
 	}
 
+	/** Finds a participant across all cached groups by their number */
 	findParticipant(number) {
 		const targetNumber = number?.match(/^\d+/)?.[0]
 		if (!targetNumber) return null
@@ -264,6 +284,7 @@ export class MetadataCache {
 		return null
 	}
 
+	/** Inserts or updates multiple groups in the cache */
 	upsertGroup(groups) {
 		if (!Array.isArray(groups)) return
 
@@ -283,6 +304,7 @@ export class MetadataCache {
 		})
 	}
 
+	/** Updates group metadata in cache with new information */
 	async updateGroup(updates) {
 		if (!Array.isArray(updates)) return
 
@@ -298,7 +320,7 @@ export class MetadataCache {
 					const metadata = await this.sock.groupMetadata(update.id)
 					groupCache.set(update.id, metadata)
 				} catch (err) {
-					log.warn(`Gagal mengambil metadata grup ${update.id}:`, err.message)
+					log.warn(`Failed to get group metadata ${update.id}:`, err.message)
 					continue
 				}
 			}
@@ -315,6 +337,7 @@ export class MetadataCache {
 	}
 }
 
+/** Returns cached group metadata for a given JID */
 export async function cachedGroupMetadata(jid) {
 	return groupCache.get(jid)
 }

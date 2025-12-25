@@ -1,7 +1,10 @@
 import { downloadMediaMessage, getContentType, isJidGroup, normalizeMessageContent } from 'baileys'
 import { fileTypeFromBuffer } from 'file-type'
+import { config } from '#config'
 
+/** Serialize class for parsing and handling WhatsApp messages */
 export class Serialize {
+	/** Creates a serialized message instance with parsed properties */
 	constructor(sock, message) {
 		this.sock = sock
 		this.chat = message.key.remoteJid
@@ -15,14 +18,56 @@ export class Serialize {
 		this.video = this.type === 'videoMessage'
 		this.audio = this.type === 'audioMessage'
 		this.sticker = this.type === 'stickerMessage' || this.type === 'lottieStickerMessage'
-
+		this.pushName = message.pushName
 		const content = this.message?.[this.type]
 		this.contextInfo = typeof content === 'object' && content !== null ? content.contextInfo : undefined
 
 		this.quoted =
 			this.contextInfo?.stanzaId && this.contextInfo?.quotedMessage ? new Quoted(this.contextInfo, sock) : undefined
 
-		this.text = this.message ? extract_text(this.message) : undefined
+		this.text = this.message ? extract_text(this.message) : ''
+
+		// Mentions
+		this.mentions = this.contextInfo?.mentionedJid || []
+
+		// Prefix & Command parsing
+		const textTrimmed = (this.text || '').trim()
+		const tokens = textTrimmed.replace(/\s+/g, ' ')
+		const words = tokens.split(/\s+/)
+		const firstToken = words[0]?.toLowerCase() || ''
+
+		// Find matching prefix
+		const prefixList = Array.isArray(config.prefix) ? config.prefix : ['.']
+		this.prefix = prefixList.find(p => firstToken.startsWith(p)) || ''
+
+		// Parse command
+		if (this.prefix) {
+			const afterPrefix = firstToken.slice(this.prefix.length)
+			this.command = afterPrefix || words[1]?.toLowerCase() || ''
+		} else {
+			this.command = ''
+		}
+
+		// Calculate args position
+		let argsStartIndex = 0
+		if (this.prefix && this.command) {
+			const afterPrefix = firstToken.slice(this.prefix.length)
+			if (afterPrefix) {
+				// .ping args... → skip firstToken
+				argsStartIndex = firstToken.length
+			} else {
+				// . ping args... → skip prefix and command
+				argsStartIndex = firstToken.length + 1 + this.command.length
+			}
+		}
+
+		// args = normalized (extra spaces removed)
+		this.args = tokens.slice(argsStartIndex).trim()
+
+		// rawArgs = preserves original formatting (newlines, multiple spaces)
+		const commandIndex = textTrimmed.toLowerCase().indexOf(this.command)
+		this.rawArgs =
+			this.command && commandIndex !== -1 ? textTrimmed.slice(commandIndex + this.command.length).trim() : ''
 
 		Object.defineProperties(this, {
 			contextInfo: {
@@ -40,11 +85,13 @@ export class Serialize {
 		})
 	}
 
+	/** Sends a reply message quoting the original message */
 	async reply(text) {
 		const msg = await this.sock.sendMessage(this.chat, { text }, { quoted: this })
 		return new Serialize(this.sock, msg)
 	}
 
+	/** Edits the current message with new text */
 	async edit(text) {
 		if (this.image) {
 			return await this.sock.sendMessage(this.chat, {
@@ -63,13 +110,14 @@ export class Serialize {
 		}
 	}
 
+	/** Sends a message (text, media buffer, or URL) without quoting */
 	async send(content, options = {}) {
 		const isBuffer = Buffer.isBuffer(content)
 		const isUrl = typeof content === 'string' && /^https?:\/\//i.test(content)
 		const isText = typeof content === 'string' && !isUrl
 
 		if (isText) {
-			const msg = await this.sock.sendMessage(this.chat, { text: content }, { quoted: this })
+			const msg = await this.sock.sendMessage(this.chat, { text: content })
 			return new Serialize(this.sock, msg)
 		}
 
@@ -105,12 +153,11 @@ export class Serialize {
 			...(options.gifPlayback && mediaType === 'video' && { gifPlayback: true })
 		}
 
-		const msg = await this.sock.sendMessage(this.chat, messageData, {
-			quoted: this
-		})
+		const msg = await this.sock.sendMessage(this.chat, messageData)
 		return new Serialize(this.sock, msg)
 	}
 
+	/** Blocks a user from messaging the bot */
 	async Block(user) {
 		const blocked = await this.sock.fetchBlocklist()
 
@@ -121,6 +168,7 @@ export class Serialize {
 		return null
 	}
 
+	/** Unblocks a previously blocked user */
 	async Unblock(user) {
 		const blocked = await this.sock.fetchBlocklist()
 
@@ -131,6 +179,7 @@ export class Serialize {
 		return null
 	}
 
+	/** Forwards a message to another chat */
 	async forward(jid, msg, opts = {}) {
 		return await this.sock.sendMessage(
 			jid,
@@ -145,6 +194,7 @@ export class Serialize {
 		)
 	}
 
+	/** Converts mimetype to Baileys media type (image, video, audio, document) */
 	mimetypeToMediaType(mimetype) {
 		if (mimetype.startsWith('image/')) return 'image'
 		if (mimetype.startsWith('video/')) return 'video'
@@ -152,6 +202,7 @@ export class Serialize {
 		return 'document'
 	}
 
+	/** Detects media type from URL extension */
 	detectFromUrl(url, mimetype) {
 		if (mimetype) {
 			return { type: this.mimetypeToMediaType(mimetype), mimetype }
@@ -178,7 +229,9 @@ export class Serialize {
 	}
 }
 
+/** Quoted class for handling quoted/replied messages */
 class Quoted {
+	/** Creates a quoted message instance */
 	constructor(quoted, sock) {
 		this.key = {
 			remoteJid: quoted.remoteJid,
@@ -203,11 +256,13 @@ class Quoted {
 		Object.defineProperty(this, 'sock', { value: sock, enumerable: false })
 	}
 
+	/** Downloads the quoted media as a buffer */
 	async download() {
 		return await downloadMediaMessage(this, 'buffer', {})
 	}
 }
 
+/** Extracts text content from various message types */
 function extract_text(message) {
 	if (message?.extendedTextMessage?.text) return message.extendedTextMessage.text
 	if (message?.conversation) return message.conversation

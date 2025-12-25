@@ -8,19 +8,19 @@ import makeWASocket, {
 } from 'baileys'
 import MAIN_LOGGER from 'pino'
 import NodeCache from '@cacheable/node-cache'
+import { processCommand } from './BaseBot.js'
 import { config } from '#config'
 import { Serialize, cachedGroupMetadata, MetadataCache } from '#lib'
 import { log } from '#utils'
 
 const logger = MAIN_LOGGER({ level: 'silent' })
 const msgRetryCounterCache = new NodeCache()
-/**
- * Cache to store WhatsApp group metadata
- * TTL: 1 hour (60 * 60 seconds), do not clone objects for better performance
- */
+
+/** Cache to store WhatsApp group metadata (TTL: 1 hour) */
 export const groupCache = new NodeCache({ stdTTL: 60 * 60, useClones: false })
 const phone = config.phone
 
+/** Creates and starts the WhatsApp socket connection */
 export const start = async () => {
 	// Production Alternative: Use SQL/Redis by creating your own auth state implementation
 	const { state, saveCreds } = await useMultiFileAuthState('session')
@@ -76,6 +76,8 @@ export const start = async () => {
 		 */
 		const msg = messages[0]
 		const m = new Serialize(sock, msg)
+
+		await processCommand(sock, m)
 	})
 
 	sock.ev.on('groups.update', async updates => {

@@ -19,8 +19,10 @@ const COLORS = {
 
 const TERMINAL_WIDTH = process.stdout.columns || 45
 
+/** Creates a horizontal line for the banner */
 const horizontalLine = (length = TERMINAL_WIDTH, char = '=') => char.repeat(length)
 
+/** Displays the startup banner with bot information */
 export async function startBanner(options = {}) {
 	const { borderChar = '=', color = 'cyan' } = options
 	const mainColor = COLORS[color] || COLORS.cyan
@@ -38,6 +40,7 @@ export async function startBanner(options = {}) {
 	)
 }
 
+/** Initializes the bot by showing banner and starting connection */
 export async function startBot() {
 	await startBanner()
 	start()

@@ -11,7 +11,7 @@ This bot is not just another script; it is a framework designed with performance
 - **Memory Management**: The application is built to run for extended periods without memory leaks. Resource cleanup and garbage collection strategies are implemented in the caching logic.
 - **Fail-Safe Architecture**: The bot includes automatic reconnection logic and error boundary handling. If a plugin crashes, it does not bring down the entire bot.
 
-## detailed Architecture
+## Detailed Architecture
 
 The codebase follows a strict separation of concerns to ensure maintainability:
 
@@ -39,6 +39,31 @@ Helper functions and tools used throughout the application.
 - **Logger.js**: A custom logging solution that provides grouped, color-coded, and timestamped logs for better debugging.
 - **Debugging.js**: Tools for inspecting cache states and memory usage during development.
 
+### 4. Code Documentation
+
+All functions and classes in this project are documented using JSDoc comments. Each function includes a brief description of what it does, making the codebase easy to understand and maintain.
+
+**Example:**
+
+```javascript
+/** Sends a reply message quoting the original message */
+async reply(text) {
+    const msg = await this.sock.sendMessage(this.chat, { text }, { quoted: this })
+    return new Serialize(this.sock, msg)
+}
+
+/** Checks if a JID is admin in a group */
+export function isAdmin(metadata, jid) {
+    // implementation...
+}
+```
+
+This documentation approach helps developers:
+
+- Quickly understand what each function does
+- Navigate the codebase more efficiently
+- Maintain and extend the code with confidence
+
 ## Getting Started
 
 ### Prerequisites
@@ -48,13 +73,13 @@ Helper functions and tools used throughout the application.
 
 ### Installation
 
-1.  **Clone the repository**
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-3.  **Configuration**:
-    Open `config.js` and customize your settings. valid settings include your bot name, owner number, and session path.
+1. **Clone the repository**
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Configuration**:
+   Open `config.js` and customize your settings. Valid settings include your bot name, owner number, and session path.
 
 ### Running the Bot
 
@@ -70,26 +95,55 @@ npm start
 
 Plugins are the primary way to add features. Located in `src/Plugins`, each plugin is a standalone module.
 
-**Example Structure:**
+**Simple Example (ping.js):**
 
 ```javascript
 export default {
-	// Array of commands that trigger this plugin
-	Commands: ['ping', 'speed'],
-
-	// Access control flags
-	OnlyOwner: false,
-	OnlyGroup: false,
-
-	// Main execution function
-	handle: async (m, { sock }) => {
+	Commands: ['ping'],
+	async handle(sock, m) {
 		const start = Date.now()
-		await m.reply('Pong!')
+		const sent = await m.send('Pinging...')
 		const end = Date.now()
-		await m.reply(`Latency: ${end - start}ms`)
+		await sent.edit(`${end - start} ms`)
 	}
 }
 ```
+
+**Advanced Example with Group Check (cekadmin.js):**
+
+```javascript
+import { jidNormalizedUser } from 'baileys'
+import { isAdmin, MetadataCache } from '#lib'
+
+export default {
+	Commands: ['cekadmin', 'checkadmin'],
+	OnlyGroup: true,
+	async handle(sock, m) {
+		const cache = new MetadataCache(sock)
+		const metadata = await cache.getGroupMetadata(m.chat)
+		if (!metadata) {
+			return await m.reply('Failed to get group metadata')
+		}
+		const botId = jidNormalizedUser(sock.user.id)
+		const botLid = sock.user.lid ? jidNormalizedUser(sock.user.lid) : null
+		const botIsAdmin = isAdmin(metadata, botId) || (botLid && isAdmin(metadata, botLid))
+		const senderIsAdmin = isAdmin(metadata, m.sender)
+		const text = ` *Admin Status*
+
+ *Bot:* ${botIsAdmin ? 'Admin' : 'Not Admin'}
+ *You:* ${senderIsAdmin ? 'Admin' : 'Not Admin'}`
+
+		await m.reply(text)
+	}
+}
+```
+
+**Plugin Options:**
+
+- `Commands`: Array of command names that trigger this plugin
+- `OnlyOwner`: Only bot owner can use this command
+- `OnlyGroup`: Command only works in groups
+- `OnlyAdmin`: Only group admins can use this command
 
 ### Understanding Handlers
 
@@ -110,7 +164,7 @@ export default {
 
 ## Troubleshooting
 
-- **Session Issues**: If the bot fails to connect loop, try deleting the `session` folder and re-scanning the QR code.
+- **Session Issues**: If the bot fails to connect in a loop, try deleting the `session` folder and re-scanning the QR code.
 - **Cache Misses**: If group names are outdated, use the debug tools to flush the cache.
 - **Update Errors**: Ensure `node_modules` are up to date by running `npm update`.
 

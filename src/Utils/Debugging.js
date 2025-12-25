@@ -1,18 +1,19 @@
 import { groupCache } from '#core'
+import { log } from './Logger.js'
 
 export function showAllCache() {
 	const keys = groupCache.keys()
-	console.log('\n========== ALL CACHE ==========')
-	console.log(`Total Groups Cached: ${keys.length}`)
+	log.debug('\n========== ALL CACHE ==========')
+	log.debug(`Total Groups Cached: ${keys.length}`)
 
 	keys.forEach(groupId => {
 		const group = groupCache.get(groupId)
-		console.log(`\n[${group?.subject || 'Unknown'}]`)
-		console.log(`Group ID: ${groupId}`)
-		console.log(`Participants: ${group?.participants?.length || 0}`)
-		console.log(`Admins: ${group?.participants?.filter(p => p.admin).length || 0}`)
+		log.debug(`\n[${group?.subject || 'Unknown'}]`)
+		log.debug(`Group ID: ${groupId}`)
+		log.debug(`Participants: ${group?.participants?.length || 0}`)
+		log.debug(`Admins: ${group?.participants?.filter(p => p.admin).length || 0}`)
 	})
-	console.log('================================\n')
+	log.debug('================================\n')
 }
 
 /**
@@ -22,13 +23,13 @@ export function showGroupCache(groupId) {
 	const group = groupCache.get(groupId)
 
 	if (!group) {
-		console.log(`\n❌ Cache not found for: ${groupId}\n`)
+		log.debug(`Cache not found for: ${groupId}`)
 		return
 	}
 
-	console.log('\n========== GROUP CACHE DETAIL ==========')
-	console.log(JSON.stringify(group, null, 2))
-	console.log('=========================================\n')
+	log.debug('\n========== GROUP CACHE DETAIL ==========')
+	log.debug(JSON.stringify(group, null, 2))
+	log.debug('=========================================\n')
 }
 
 /**
@@ -38,13 +39,13 @@ export function showCacheStats() {
 	const keys = groupCache.keys()
 	const stats = groupCache.getStats()
 
-	console.log('\n========== CACHE STATS ==========')
-	console.log(`Total Groups: ${keys.length}`)
-	console.log(`Cache Hits: ${stats.hits}`)
-	console.log(`Cache Misses: ${stats.misses}`)
-	console.log(`Keys: ${stats.keys}`)
-	console.log(`Used Memory: ${(stats.vsize / 1024 / 1024).toFixed(2)} MB`)
-	console.log('=================================\n')
+	log.debug('\n========== CACHE STATS ==========')
+	log.debug(`Total Groups: ${keys.length}`)
+	log.debug(`Cache Hits: ${stats.hits}`)
+	log.debug(`Cache Misses: ${stats.misses}`)
+	log.debug(`Keys: ${stats.keys}`)
+	log.debug(`Used Memory: ${(stats.vsize / 1024 / 1024).toFixed(2)} MB`)
+	log.debug('=================================\n')
 }
 
 /**
@@ -58,7 +59,7 @@ export function exportCache() {
 		data[key] = groupCache.get(key)
 	})
 
-	console.log('\n========== CACHE EXPORT ==========')
-	console.log(JSON.stringify(data, null, 2))
-	console.log('==================================\n')
+	log.debug('\n========== CACHE EXPORT ==========')
+	log.debug(JSON.stringify(data, null, 2))
+	log.debug('==================================\n')
 }
