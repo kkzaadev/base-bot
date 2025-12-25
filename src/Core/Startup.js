@@ -31,7 +31,7 @@ export async function startBanner(options = {}) {
 			`${mainColor}           KKZAA BOT${COLORS.reset}\n` +
 			`${mainColor}${horizontalLine(TERMINAL_WIDTH, borderChar)}${COLORS.reset}\n` +
 			`${COLORS.boldYellow}Base Bot${COLORS.reset}\n` +
-			`${COLORS.green}Name Bot  :${COLORS.reset} ${config.botname || 'Unknown'}\n` +
+			`${COLORS.green}Name Bot  :${COLORS.reset} ${config.botName || 'Unknown'}\n` +
 			`${COLORS.green}Developer :${COLORS.reset} Zaidan Yusuf Akbar\n` +
 			`${COLORS.green}Github    :${COLORS.reset} kkzaadev\n` +
 			`${mainColor}${horizontalLine(TERMINAL_WIDTH, borderChar)}${COLORS.reset}\n` +
