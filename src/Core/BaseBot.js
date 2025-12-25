@@ -22,7 +22,7 @@ export async function processCommand(sock, m) {
 		const shouldContinue = await preProcess(sock, m)
 		if (!shouldContinue) return
 
-		if (text.trim() && prefix) {
+		if (text?.trim() && prefix) {
 			logMessage(pushName, text, senderAlt)
 		}
 

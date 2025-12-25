@@ -10,10 +10,12 @@ import MAIN_LOGGER from 'pino'
 import NodeCache from '@cacheable/node-cache'
 import { processCommand } from './BaseBot.js'
 import { config } from '#config'
+import qrcode from 'qrcode-terminal'
 import { Serialize, cachedGroupMetadata, MetadataCache } from '#lib'
 import { log, showAllCache, showGroupCache } from '#utils'
 
 const logger = MAIN_LOGGER({ level: 'silent' })
+let qrCount = 0
 const msgRetryCounterCache = new NodeCache()
 
 /** Cache to store WhatsApp group metadata (TTL: 1 hour) */
@@ -29,6 +31,8 @@ export const start = async () => {
 	const sock = makeWASocket({
 		version,
 		logger,
+		printQRInTerminal: false,
+		generateHighQualityLinkPreview: true,
 		auth: {
 			creds: state.creds,
 			keys: makeCacheableSignalKeyStore(state.keys, logger)
@@ -37,7 +41,7 @@ export const start = async () => {
 		cachedGroupMetadata
 	})
 
-	if (!sock.authState.creds.registered) {
+	if (!sock.authState.creds.registered && config.usePairing) {
 		await delay(10000)
 		/**
 		 * if you want to use custom pairing code
@@ -48,9 +52,22 @@ export const start = async () => {
 		log.info(`PhoneNumber: ${phone}`)
 		log.info(`Pairing Code: ${code.slice(0, 4)}-${code.slice(4)}`)
 	}
-
 	sock.ev.on('connection.update', update => {
-		const { connection, lastDisconnect } = update
+		const { connection, lastDisconnect, qr } = update
+
+		if (qr != null && !config.usePairing) {
+			qrCount++
+			log.info('Displaying QR Code')
+			qrcode.generate(qr, { small: true }, qrcodeStr => {
+				console.log(qrcodeStr)
+			})
+			log.info(`Please scan with WhatsApp app! (Try ${qrCount}/5)`)
+
+			if (qrCount >= 5) {
+				log.error('Timeout: Too many QR display attempts, please try again')
+				process.exit(0)
+			}
+		}
 
 		if (connection === 'close') {
 			if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
