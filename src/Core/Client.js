@@ -68,6 +68,9 @@ export const start = async () => {
 	sock.ev.on('creds.update', saveCreds)
 
 	sock.ev.on('messages.upsert', async ({ messages, type }) => {
+		// if you want to do debugging you can remove //
+		// log.debug(JSON.stringify(messages, null, 2))
+		// log.debug(JSON.stringify(type, null, 2))
 		if (type !== 'notify') return
 		/**
 		 * you can use it like this
@@ -76,20 +79,24 @@ export const start = async () => {
 		 */
 		const msg = messages[0]
 		const m = new Serialize(sock, msg)
+		// log.debug(JSON.stringify(m, null, 2))
 
 		await processCommand(sock, m)
 	})
 
 	sock.ev.on('groups.update', async updates => {
 		try {
+			// log.debug(JSON.stringify(updates, null, 2))
 			const m = new MetadataCache(sock)
 			await m.updateGroup(updates)
+			// log.debug('Groups updated successfully')
 		} catch (error) {
 			log.warn(`[ERROR] Failed to update groups: ${error.message}`)
 		}
 	})
 
 	sock.ev.on('group-participants.update', async ({ id, participants, action }) => {
+		// log.debug(JSON.stringify({ id, participants, action }, null, 2))
 		if (action === 'remove') {
 			const botKicked = participants.some(p => {
 				const participantId = p.id || p
@@ -105,6 +112,7 @@ export const start = async () => {
 		try {
 			const m = new MetadataCache(sock)
 			await m.updateParticipant(id, participants, action)
+			// log.debug('Participants updated successfully')
 		} catch (error) {
 			log.warn(`[ERROR] Failed to update participants: ${error.message}`)
 		}
